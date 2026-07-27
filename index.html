@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>HAMSA - సందేశ సంచయం</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="theme-color" content="#7a1f2b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HAMSA">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ramabhadra&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --maroon:#7a1f2b;
+    --maroon-dark:#5c1620;
+    --gold:#c9962c;
+    --ivory:#faf6ee;
+    --paper:#fffdf8;
+    --ink:#2b2320;
+    --ink-soft:#6b5f56;
+    --line:#e7ddc9;
+    --new-tint:#fff6de;
+    --blue:#2255aa;
+    --blue-soft:#5b7fb5;
+    --shadow: 0 2px 10px rgba(90,40,20,0.12);
+    --header-h:56px;
+    --subheader-h:42px;
+    --font-scale:1;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:#e9e2d3;}
+  body{
+    font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{
+    max-width:800px;
+    margin:0 auto;
+    min-height:100vh;
+    background:var(--paper);
+    position:relative;
+    box-shadow:0 0 24px rgba(0,0,0,0.15);
+    display:flex;
+    flex-direction:column;
+    /* NOTE: no overflow:hidden here - it breaks position:sticky on descendants */
+  }
+
+  /* ---------- Header ---------- */
+  #mainHeader{
+    position:sticky; top:0; z-index:40;
+    height:var(--header-h);
+    background:linear-gradient(135deg,var(--maroon),var(--maroon-dark));
+    color:#fff8ea;
+    display:flex; align-items:center; gap:10px;
+    padding:0 14px;
+    box-shadow:var(--shadow);
+  }
+  #menuToggle{
+    width:36px;height:36px;border:none;border-radius:8px;
+    background:rgba(255,255,255,0.12);
+    color:#fff8ea;
+    font-size:20px; line-height:1; cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:opacity .2s, transform .15s;
+  }
+  #menuToggle:active{ transform:scale(0.92); }
+  #menuToggle.locked{ opacity:0.35; cursor:not-allowed; }
+  #headerTitle{
+    font-weight:700; letter-spacing:.5px; font-size:18px;
+    display:flex; flex-direction:column; line-height:1.15;
+  }
+  #headerTitle small{
+    font-weight:400; font-size:10.5px; color:#e9c98f; letter-spacing:.4px;
+  }
+  #syncDot{
+    margin-left:auto;
+    width:9px;height:9px;border-radius:50%;
+    background:#7fd48a;
+    box-shadow:0 0 0 3px rgba(127,212,138,0.25);
+    flex:none;
+  }
+  #syncDot.warn{ background:#e0a93a; box-shadow:0 0 0 3px rgba(224,169,58,0.25); }
+  #installBtn{
+    border:1px solid rgba(255,255,255,0.35); background:rgba(255,255,255,0.12);
+    color:#fff8ea; border-radius:7px; padding:5px 10px; font-size:11.5px; font-weight:600;
+    cursor:pointer; flex:none; white-space:nowrap;
+  }
+  #installBtn:active{ background:rgba(255,255,255,0.22); }
+  #installBtn[hidden]{ display:none; }
+
+  /* ---------- Sub header ---------- */
+  #subHeader{
+    position:sticky; top:var(--header-h); z-index:35;
+    height:var(--subheader-h);
+    background:var(--gold);
+    color:#3a2600;
+    display:flex; align-items:center;
+    padding:0 14px;
+    font-weight:600; font-size:14.5px;
+    box-shadow:0 2px 6px rgba(150,110,20,0.25);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  /* ---------- Side menu ---------- */
+  #sideMenuOverlay{
+    position:fixed; inset:0; background:rgba(30,15,10,0.45);
+    z-index:50; display:none;
+  }
+  #sideMenuOverlay.open{ display:block; }
+  #sideMenu{
+    position:fixed; top:0; left:-300px; bottom:0; width:280px; max-width:82vw;
+    background:var(--ivory); z-index:51;
+    box-shadow:2px 0 18px rgba(0,0,0,0.3);
+    transition:left .22s ease;
+    display:flex; flex-direction:column;
+  }
+  #sideMenu.open{ left:0; }
+  #sideMenuHead{
+    background:var(--maroon); color:#fff8ea; padding:16px 14px;
+    font-weight:700; font-size:15px;
+  }
+  #sideMenuHead span{ display:block; font-weight:400; font-size:11px; color:#e9c98f; margin-top:3px;}
+  #topicList{ list-style:none; margin:0; padding:6px 0; overflow-y:auto; flex:1;}
+  #topicList li{
+    padding:11px 16px; font-size:13.5px; border-bottom:1px solid var(--line);
+    cursor:pointer; display:flex; justify-content:space-between; gap:8px; align-items:center;
+  }
+  #topicList li:active, #topicList li.active{ background:#f1e4c4; }
+  #topicList li .cnt{
+    background:var(--maroon); color:#fff; border-radius:10px; padding:1px 8px; font-size:10.5px; flex:none;
+  }
+
+  /* ---------- Main message area ---------- */
+  #messagesContainer{
+    flex:1; padding:14px 12px 40px;
+    background:
+      radial-gradient(circle at 10% 0%, #fdf9ef 0, transparent 60%),
+      var(--paper);
+  }
+  #loadingBox{ text-align:center; padding:60px 20px; color:var(--ink-soft); }
+  #loadingBox .note{ font-size:11.5px; margin-top:8px; color:#a89a86; }
+  .spinner{
+    width:34px;height:34px;border-radius:50%;
+    border:3px solid var(--line); border-top-color:var(--maroon);
+    animation:spin 0.9s linear infinite; margin:0 auto 14px;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg);} }
+  .error-box{ background:#fbe4e4; border:1px solid #e5a9a9; color:#7a2323; padding:14px; border-radius:10px; font-size:13.5px;}
+
+  .msg-node{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px 12px;
+    margin:0 0 10px 0;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+    scroll-margin-top: calc(var(--header-h) + var(--subheader-h) + 12px);
+  }
+  .msg-node.new-msg{ background:var(--new-tint); border-color:#ecd48c; }
+  .msg-node.depth-1, .msg-node.depth-2, .msg-node.depth-3, .msg-node.depth-4{
+    margin-left:14px;
+  }
+  .msg-children{
+    margin-top:8px;
+    padding-left:10px;
+    border-left:2px dashed var(--line);
+  }
+  .msg-header{
+    display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:5px;
+  }
+  .sender-root{ color:var(--maroon); font-weight:700; font-size:calc(14.5px * var(--font-scale)); }
+  .date-root{ color:var(--ink-soft); font-size:calc(10.5px * var(--font-scale)); }
+  .sender-reply{ color:var(--blue); font-weight:600; font-size:calc(12.5px * var(--font-scale)); }
+  .date-reply{ color:var(--blue-soft); font-size:calc(9.5px * var(--font-scale)); }
+  .msg-body{
+    font-family:'Ramabhadra','Poppins',sans-serif;
+    font-size:calc(15.5px * var(--font-scale)); line-height:1.6; white-space:pre-wrap; word-break:break-word;
+    color:var(--ink);
+  }
+  .depth-1 .msg-body, .depth-2 .msg-body, .depth-3 .msg-body, .depth-4 .msg-body{ font-size:calc(14.5px * var(--font-scale)); }
+  .msg-body img{ max-width:100%; height:auto; display:block; border-radius:8px; margin:6px 0; }
+  .msg-body iframe{ width:100%; aspect-ratio:16/9; height:auto; border:none; border-radius:8px; margin:6px 0; display:block; }
+  .msg-body mark{ background:#ffe08a; padding:0 1px; border-radius:2px; }
+
+  .new-divider{
+    display:flex; align-items:center; gap:8px; margin:18px 0 12px; color:var(--maroon);
+    font-size:11.5px; font-weight:600;
+  }
+  .new-divider::before, .new-divider::after{ content:""; flex:1; height:1px; background:var(--gold); }
+
+  /* ---------- Popup ---------- */
+  #popupOverlay{
+    position:fixed; inset:0; background:rgba(30,15,10,0.55);
+    display:none; align-items:center; justify-content:center; z-index:60; padding:18px;
+  }
+  #popupOverlay.open{ display:flex; }
+  #popupBox{
+    background:var(--paper); width:100%; max-width:420px; border-radius:14px;
+    max-height:82vh; display:flex; flex-direction:column; overflow:hidden;
+    box-shadow:0 12px 40px rgba(0,0,0,0.35);
+  }
+  #popupBox h2{
+    margin:0; padding:16px 18px 6px; font-size:16.5px; color:var(--maroon);
+  }
+  #popupBox .sub{ margin:0; padding:0 18px 12px; font-size:12px; color:var(--ink-soft); }
+  #topicSummaryList{ list-style:none; margin:0; padding:4px 10px 14px; overflow-y:auto; }
+  #topicSummaryList li{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:11px 8px; border-bottom:1px solid var(--line); cursor:pointer; font-size:13.5px;
+  }
+  #topicSummaryList li:last-child{ border-bottom:none; }
+  #topicSummaryList li:active{ background:#f6efdb; }
+  #topicSummaryList li.all-row{ font-weight:700; color:var(--maroon); }
+  #topicSummaryList li .cnt{
+    background:var(--gold); color:#3a2600; border-radius:10px; padding:2px 9px; font-size:11px; flex:none;
+  }
+
+  #scrollToggleBtn{
+    position:fixed;
+    right:14px;
+    top:50%;
+    transform:translateY(-50%);
+    width:46px; height:46px;
+    border-radius:50%;
+    border:1px solid rgba(255,255,255,0.35);
+    background:rgba(122,31,43,0.45);
+    color:#fff8ea;
+    font-size:16px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    z-index:30; /* below side menu (51) and popup (60), so it's naturally covered when they're open */
+    backdrop-filter:blur(2px);
+    transition:opacity .15s, background .15s;
+    opacity:0.55;
+  }
+  #fontSizeControl{ display:flex; gap:4px; flex:none; }
+  .font-btn{
+    width:30px; height:30px; border:none; border-radius:7px; background:rgba(255,255,255,0.12); color:#fff8ea;
+    font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  .font-btn:active{ background:rgba(255,255,255,0.25); }
+
+  #searchToggleBtn{
+    width:36px;height:36px;border:none;border-radius:8px; background:rgba(255,255,255,0.12); color:#fff8ea;
+    font-size:16px; cursor:pointer; display:flex;align-items:center;justify-content:center; flex:none;
+  }
+  #searchToggleBtn.locked{ opacity:0.35; cursor:not-allowed; }
+
+  #searchOverlay{
+    position:fixed; inset:0; background:rgba(30,15,10,0.55); z-index:65;
+    display:none; flex-direction:column; padding:0;
+  }
+  #searchOverlay.open{ display:flex; }
+  #searchBar{
+    background:var(--paper); display:flex; align-items:center; gap:8px;
+    padding:12px 14px; box-shadow:0 2px 10px rgba(0,0,0,0.15);
+  }
+  #searchInputWrap{ position:relative; flex:1; display:flex; }
+  #searchInput{
+    flex:1; padding:10px 34px 10px 12px; border:1px solid var(--line); border-radius:9px; font-size:15px;
+    font-family:'Ramabhadra','Poppins',sans-serif; width:100%;
+  }
+  #searchClearBtn{
+    position:absolute; right:6px; top:50%; transform:translateY(-50%);
+    width:26px; height:26px; border:none; border-radius:50%; background:var(--line); color:var(--ink-soft);
+    font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  #searchClearBtn:active{ background:#ddd0b4; }
+  #searchCloseBtn{
+    width:38px;height:38px;border:none;border-radius:9px; background:var(--maroon); color:#fff8ea;
+    font-size:14px; cursor:pointer; flex:none;
+  }
+  #searchMeta{
+    background:var(--ivory); color:var(--ink-soft); font-size:11.5px; padding:6px 16px;
+    border-bottom:1px solid var(--line);
+  }
+  #searchResultsList{
+    list-style:none; margin:0; padding:0; overflow-y:auto; flex:1; background:var(--paper);
+  }
+  #searchResultsList li{
+    padding:11px 16px; border-bottom:1px solid var(--line); cursor:pointer;
+  }
+  #searchResultsList li:active{ background:#f6efdb; }
+  #searchResultsList .sr-topic{ font-size:10.5px; color:var(--gold); font-weight:700; text-transform:uppercase; letter-spacing:.3px; }
+  #searchResultsList .sr-sender{ font-size:12.5px; font-weight:700; color:var(--maroon); margin-left:6px; }
+  #searchResultsList .sr-date{ font-size:10px; color:var(--ink-soft); margin-left:6px; }
+  #searchResultsList .sr-snippet{ font-size:13.5px; margin-top:3px; font-family:'Ramabhadra','Poppins',sans-serif; }
+  #searchResultsList mark{ background:#ffe08a; padding:0 1px; border-radius:2px; }
+
+  .msg-node.flash-highlight{ animation: flashHighlight 1.6s ease; }
+  @keyframes flashHighlight{
+    0%{ box-shadow:0 0 0 3px var(--gold); }
+    100%{ box-shadow:none; }
+  }
+
+  @media (min-width:801px){
+    #app{ min-height:calc(100vh - 40px); margin-top:20px; margin-bottom:20px; border-radius:14px; }
+    #mainHeader{ border-top-left-radius:14px; border-top-right-radius:14px; }
+    #messagesContainer{ border-bottom-left-radius:14px; border-bottom-right-radius:14px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header id="mainHeader">
+    <button id="menuToggle" class="locked" aria-label="Menu">&#9776;</button>
+    <div id="headerTitle">HAMSA<small>సందేశ సంచయం</small></div>
+    <div id="fontSizeControl">
+      <button id="fontDecreaseBtn" class="font-btn" aria-label="Decrease font size">A&#8722;</button>
+      <button id="fontIncreaseBtn" class="font-btn" aria-label="Increase font size">A&#43;</button>
+    </div>
+    <button id="searchToggleBtn" class="locked" aria-label="Search messages">&#128269;</button>
+    <button id="installBtn" hidden title="Install HAMSA app">&#8681; Install</button>
+    <div id="syncDot" title="Data sync status"></div>
+  </header>
+
+  <div id="subHeader">సందేశాలు లోడ్ అవుతున్నాయి...</div>
+
+  <div id="sideMenuOverlay"></div>
+  <nav id="sideMenu" aria-label="Topics">
+    <div id="sideMenuHead">విషయాలు (Topics)<span>ఒక అంశంపై నొక్కండి</span></div>
+    <ul id="topicList"></ul>
+  </nav>
+
+  <main id="messagesContainer">
+    <div id="loadingBox">
+      <div class="spinner"></div>
+      డేటా లోడ్ అవుతోంది... (Loading messages)
+      <div class="note" id="loadingNote"></div>
+    </div>
+  </main>
+
+  <button id="scrollToggleBtn" class="hidden" aria-label="Scroll to top">&#9650;</button>
+</div>
+
+<div id="popupOverlay">
+  <div id="popupBox">
+    <h2 id="popupTitle">కొత్త సందేశాలు</h2>
+    <p class="sub" id="popupSub">Pick an item to view messages and unlock the topics menu.</p>
+    <ul id="topicSummaryList"></ul>
+  </div>
+</div>
+
+<div id="searchOverlay">
+  <div id="searchBar">
+    <div id="searchInputWrap">
+      <input type="text" id="searchInput" placeholder="Search all messages..." autocomplete="off">
+      <button id="searchClearBtn" type="button" aria-label="Clear search" style="display:none;">&#10005;</button>
+    </div>
+    <button id="searchCloseBtn" aria-label="Close search">&#10005;</button>
+  </div>
+  <div id="searchMeta"></div>
+  <ul id="searchResultsList"></ul>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const CHATDATA_URL = "https://gvssmark.github.io/HAMSA/chatData0.json"; // global var set by this file: chatData0
+  const SECOND_SOURCE_URL = "https://script.google.com/macros/s/AKfycbxDuDW1plTf8LusgXNHjA-5rflH33T07ahVKbAYmDTuza_A_qZ5Lfb4wFzSWIuktWVd0A/exec";
+  const BOOKMARK_KEY = "hamsa_last_seen_msgno_v1";
+  const SEARCH_QUERY_KEY = "hamsa_search_query_v1";
+  const DEFAULT_LOOKBACK_DAYS = 7; // used only to seed the very first-ever visit (no bookmark yet)
+
+  const DB_NAME = "hamsaDB";
+  const DB_VERSION = 1;
+  const STORE_NAME = "cache";
+
+  const els = {
+    subHeader: document.getElementById('subHeader'),
+    menuToggle: document.getElementById('menuToggle'),
+    installBtn: document.getElementById('installBtn'),
+    sideMenu: document.getElementById('sideMenu'),
+    sideMenuOverlay: document.getElementById('sideMenuOverlay'),
+    topicList: document.getElementById('topicList'),
+    messages: document.getElementById('messagesContainer'),
+    loadingNote: document.getElementById('loadingNote'),
+    scrollToggleBtn: document.getElementById('scrollToggleBtn'),
+    searchToggleBtn: document.getElementById('searchToggleBtn'),
+    fontDecreaseBtn: document.getElementById('fontDecreaseBtn'),
+    fontIncreaseBtn: document.getElementById('fontIncreaseBtn'),
+    searchOverlay: document.getElementById('searchOverlay'),
+    searchInput: document.getElementById('searchInput'),
+    searchClearBtn: document.getElementById('searchClearBtn'),
+    searchCloseBtn: document.getElementById('searchCloseBtn'),
+    searchMeta: document.getElementById('searchMeta'),
+    searchResultsList: document.getElementById('searchResultsList'),
+    popupOverlay: document.getElementById('popupOverlay'),
+    popupTitle: document.getElementById('popupTitle'),
+    popupSub: document.getElementById('popupSub'),
+    topicSummaryList: document.getElementById('topicSummaryList'),
+    syncDot: document.getElementById('syncDot')
+  };
+
+  let sideMenuUnlocked = false;
+  let allMessages = [];          // flat, de-duplicated, sorted by messageNo
+  let byMessageNo = new Map();   // messageNo -> message
+  let childrenOf = new Map();    // messageNo -> [child messages] (by refNo)
+
+  // ================= IndexedDB cache (holds the ~30MB GitHub backlog) =================
+
+  function idbOpen(){
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if(!db.objectStoreNames.contains(STORE_NAME)){
+          db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function idbGetBacklog(){
+    try{
+      const db = await idbOpen();
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const req = tx.objectStore(STORE_NAME).get('backlog');
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    }catch(e){
+      console.warn('HAMSA: IndexedDB read failed, will fetch fresh.', e);
+      return null;
+    }
+  }
+
+  async function idbSetBacklog(rows, syncedUpToMsgNo){
+    try{
+      const db = await idbOpen();
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).put({ id: 'backlog', rows: rows, syncedUpToMsgNo: syncedUpToMsgNo, fetchedAt: Date.now() });
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+      });
+    }catch(e){
+      console.warn('HAMSA: IndexedDB write failed (cache will not persist this session).', e);
+      return false;
+    }
+  }
+
+  // ================= Loading chatData0.json from GitHub (only when needed) =================
+  // Uses a dynamically injected <script> tag (not fetch()) to avoid any CORS dependency,
+  // and only appends it when we've decided a refresh is actually required.
+
+  function loadScriptOnce(url){
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = url;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('script load failed: ' + url));
+      document.body.appendChild(s);
+    });
+  }
+
+  async function fetchBacklogFromGithub(){
+    try{
+      els.loadingNote.textContent = 'GitHub నుండి తాజా డేటా (~30MB) డౌన్‌లోడ్ అవుతోంది...';
+      // cache-bust: we already decided we need a fresh copy, so bypass any stale HTTP/CDN cache
+      const bustUrl = CHATDATA_URL + '?cb=' + Date.now();
+      await loadScriptOnce(bustUrl);
+      if(typeof window.chatData0 !== 'undefined' && Array.isArray(window.chatData0)){
+        const rows = window.chatData0;
+        try{ delete window.chatData0; }catch(e){ window.chatData0 = undefined; } // free the duplicate reference
+        return rows;
+      }
+      return null;
+    }catch(e){
+      console.warn('HAMSA: failed to load chatData0.json from GitHub.', e);
+      return null;
+    }finally{
+      els.loadingNote.textContent = '';
+    }
+  }
+
+  // Decide whether we can use the IndexedDB copy, or must re-fetch from GitHub.
+  // k1 = the "messages up to this No. are already on GitHub" marker read from the live
+  //      Google Sheet at cell [0][10]. When it changes, the maintainer has published a
+  //      new chatData0.json, so our cached copy is stale and must be replaced wholesale.
+  // `cached` is passed in (rather than read here) so it can be fetched in parallel with
+  // the live Google Sheet request instead of waiting for it first.
+  async function loadBacklog(k1, cached){
+    if(cached){
+      if(k1 === null || cached.syncedUpToMsgNo === k1){
+        // Either we can't verify freshness this session (k1 unreadable), or it matches -
+        // either way, prefer the cache over a 30MB re-download.
+        return { rows: cached.rows, fromCache: true };
+      }
+      // k1 is known and differs from what we cached -> the maintainer published a new
+      // chatData0.json, so do a full refresh.
+      const fresh = await fetchBacklogFromGithub();
+      if(fresh){
+        await idbSetBacklog(fresh, k1); // wholesale replace - this is also how retired/purged topics drop out
+        return { rows: fresh, fromCache: false };
+      }
+      // GitHub fetch failed - fall back to the stale cache rather than nothing.
+      return { rows: cached.rows, fromCache: true };
+    }
+
+    // No cache yet at all - must fetch from GitHub regardless of whether k1 is known.
+    const fresh = await fetchBacklogFromGithub();
+    if(fresh){
+      await idbSetBacklog(fresh, k1); // k1 may be null here; that's fine, see the branch above
+      return { rows: fresh, fromCache: false };
+    }
+    return { rows: [], fromCache: false };
+  }
+
+  // ================= Utilities =================
+
+  function escapeHtml(str){
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ---- Message body sanitizer: lets a small whitelist of formatting tags render as real
+  // HTML (e.g. <del>, <span style="color:...">), while safely neutralizing everything else
+  // (script tags, event handler attributes, unknown tags). Uses DOMParser to parse, which
+  // never executes scripts or fires event handlers even for maliciously crafted input -
+  // that's what makes this safe to run on untrusted message text.
+  const SANITIZE_ALLOWED_TAGS = new Set(['B','STRONG','I','EM','U','S','DEL','SPAN','BR','SUB','SUP']);
+  const SANITIZE_DROP_ENTIRELY = new Set(['SCRIPT','STYLE','OBJECT','EMBED','LINK','META','NOSCRIPT']);
+  const SANITIZE_ALLOWED_STYLE_PROPS = new Set(['color','background-color','font-weight','font-style','text-decoration']);
+
+  function isSafeHttpUrl(src){
+    return /^https?:\/\//i.test(String(src || '').trim());
+  }
+
+  // Never trusts the original iframe src as-is - extracts just the YouTube video ID and
+  // rebuilds a clean embed URL from scratch. Anything that isn't a YouTube embed link
+  // (any other site, any malformed URL) is rejected outright.
+  function extractYoutubeEmbedUrl(src){
+    const m = String(src || '').trim().match(/^https?:\/\/(?:www\.)?youtube(?:-nocookie)?\.com\/embed\/([a-zA-Z0-9_-]{6,20})(?:[?&][^"'<>]*)?$/i);
+    if(!m) return null;
+    const origin = (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin !== 'null')
+      ? window.location.origin : '';
+    const originParam = origin ? ('?origin=' + encodeURIComponent(origin)) : '';
+    return 'https://www.youtube-nocookie.com/embed/' + m[1] + originParam;
+  }
+
+  function sanitizeStyleAttr(styleText){
+    const out = [];
+    String(styleText).split(';').forEach(decl => {
+      const idx = decl.indexOf(':');
+      if(idx === -1) return;
+      const prop = decl.slice(0, idx).trim().toLowerCase();
+      const val = decl.slice(idx + 1).trim();
+      if(SANITIZE_ALLOWED_STYLE_PROPS.has(prop) && !/url\s*\(|expression\s*\(|javascript:|import|@/i.test(val)){
+        out.push(prop + ':' + val);
+      }
+    });
+    return out.join('; ');
+  }
+
+  function sanitizeWalk(sourceNode, targetParent){
+    Array.from(sourceNode.childNodes).forEach(child => {
+      if(child.nodeType === Node.TEXT_NODE){
+        targetParent.appendChild(document.createTextNode(child.textContent));
+        return;
+      }
+      if(child.nodeType !== Node.ELEMENT_NODE) return; // skip comments etc.
+
+      const tag = child.tagName;
+      if(SANITIZE_DROP_ENTIRELY.has(tag)) return; // drop tag and its content entirely
+
+      if(tag === 'IMG'){
+        const src = child.getAttribute('src') || '';
+        if(!isSafeHttpUrl(src)) return; // reject anything not explicitly http(s) - blocks javascript:/data: tricks
+        const img = document.createElement('img');
+        img.setAttribute('src', src.trim());
+        img.setAttribute('loading', 'lazy');
+        const alt = child.getAttribute('alt');
+        if(alt) img.setAttribute('alt', alt);
+        targetParent.appendChild(img);
+        return; // void element - no children to process
+      }
+
+      if(tag === 'IFRAME'){
+        const embedUrl = extractYoutubeEmbedUrl(child.getAttribute('src'));
+        if(!embedUrl) return; // only ever a freshly-rebuilt YouTube embed URL - everything else is dropped
+        const iframe = document.createElement('iframe');
+        iframe.setAttribute('src', embedUrl);
+        iframe.setAttribute('width', '100%');
+        iframe.setAttribute('height', '220');
+        iframe.setAttribute('frameborder', '0');
+        iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+        iframe.setAttribute('allowfullscreen', '');
+        iframe.setAttribute('loading', 'lazy');
+        // NOTE: no `sandbox` attribute here on purpose. The security concern sandbox would
+        // address (an iframe pointing somewhere dangerous) is already fully covered by
+        // extractYoutubeEmbedUrl only ever allowing a freshly-rebuilt youtube-nocookie.com
+        // embed URL - sandboxing on top of that adds no real protection but does trigger
+        // YouTube's "Error 153: Video player configuration error" for many videos.
+        targetParent.appendChild(iframe);
+        return; // treated as void - never trust/copy original children
+      }
+
+      if(SANITIZE_ALLOWED_TAGS.has(tag)){
+        const clean = document.createElement(tag);
+        if(tag === 'SPAN' && child.hasAttribute('style')){
+          const safeStyle = sanitizeStyleAttr(child.getAttribute('style'));
+          if(safeStyle) clean.setAttribute('style', safeStyle);
+        }
+        targetParent.appendChild(clean);
+        sanitizeWalk(child, clean);
+      } else {
+        // Unknown/disallowed tag - unwrap it: keep its inner content, drop the tag itself.
+        sanitizeWalk(child, targetParent);
+      }
+    });
+  }
+
+  function sanitizeMessageHtml(rawText){
+    const withBreaks = String(rawText).replace(/\n/g, '<br>');
+    const doc = new DOMParser().parseFromString('<div>' + withBreaks + '</div>', 'text/html');
+    const frag = document.createDocumentFragment();
+    sanitizeWalk(doc.body.firstChild, frag);
+    const wrapper = document.createElement('div');
+    wrapper.appendChild(frag);
+    return wrapper.innerHTML;
+  }
+
+  // Column layout (0-based), matching chatData0.json's header row - the live Google Sheet
+  // uses the exact same layout:
+  // [0]=Date "DD/MM/YYYY", [1]=Time "HH:MM:SS", [2]=Sender (may be prefixed with "~ "),
+  // [3]=Message, [4]=Topics (comma separated), [5]=Message No, [6]=Ref No,
+  // [7]=Ref Sender, [8]=Ref Message 100 char, [9]=Len of J
+  function normalizeRow(row, sourceName){
+    if(!Array.isArray(row) || row.length < 6) return null;
+
+    const dateStr = row[0], timeStr = row[1];
+    const dm = String(dateStr || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    const tm = String(timeStr || '').match(/^(\d{1,2}):(\d{2}):(\d{2})$/);
+    if(!dm || !tm) return null; // header row or malformed row - skip
+
+    const msgNo = parseInt(row[5], 10);
+    if(isNaN(msgNo)) return null;
+
+    let refNo = row[6];
+    refNo = (refNo === '' || refNo === undefined || refNo === null) ? null : parseInt(refNo, 10);
+    if(refNo !== null && isNaN(refNo)) refNo = null;
+
+    const dateObj = new Date(+dm[3], (+dm[2]) - 1, +dm[1], +tm[1], +tm[2], +tm[3]);
+    const sender = String(row[2] || '').replace(/~/g, '').trim();
+    const message = String(row[3] || '').trim();
+
+    let topics = String(row[4] || '').split(',').map(t => t.trim()).filter(Boolean);
+    if(topics.length === 0) topics = ['(వర్గీకరించనిది)'];
+
+    return {
+      date: dateStr, time: timeStr, dateObj: dateObj,
+      sender: sender, message: message, topics: topics,
+      messageNo: msgNo, refNo: refNo, source: sourceName
+    };
+  }
+
+  function parseArrayFromText(text){
+    if(!text) return null;
+    try{ const j = JSON.parse(text); if(Array.isArray(j)) return j; }catch(e){ /* not plain JSON */ }
+    const m = text.match(/=\s*(\[[\s\S]*\])\s*;?\s*$/);
+    if(m){
+      try{
+        const arr = Function('"use strict"; return (' + m[1] + ');')();
+        if(Array.isArray(arr)) return arr;
+      }catch(e){ /* fallthrough */ }
+    }
+    return null;
+  }
+
+  async function fetchSecondSource(url){
+    const t0 = performance.now();
+    try{
+      const res = await fetch(url, { method:'GET', mode:'cors', redirect:'follow' });
+      const text = await res.text();
+      const arr = parseArrayFromText(text);
+      const seconds = ((performance.now() - t0) / 1000).toFixed(2);
+      console.info('[HAMSA] live Google Sheet fetch took', seconds + 's', '(' + text.length + ' chars received)');
+      return arr;
+    }catch(e){
+      const seconds = ((performance.now() - t0) / 1000).toFixed(2);
+      console.warn('HAMSA: could not load live Google Sheet source after', seconds + 's.', e);
+      return null;
+    }
+  }
+
+  function extractK1(rawSecond){
+    try{
+      if(rawSecond && Array.isArray(rawSecond[0]) && rawSecond[0][10] !== undefined && rawSecond[0][10] !== ''){
+        const n = parseInt(rawSecond[0][10], 10);
+        return isNaN(n) ? null : n;
+      }
+    }catch(e){ /* ignore */ }
+    return null;
+  }
+
+  function naturalTopicSort(a, b){
+    const na = parseInt(a, 10), nb = parseInt(b, 10);
+    if(!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
+    return a.localeCompare(b, 'te');
+  }
+
+  // ================= Bookmark: last-seen Message No (not date) =================
+
+  function getBookmarkMsgNo(){
+    try{
+      const v = localStorage.getItem(BOOKMARK_KEY);
+      return v !== null ? parseInt(v, 10) : null;
+    }catch(e){ return null; }
+  }
+  function setBookmarkMsgNo(n){
+    try{ localStorage.setItem(BOOKMARK_KEY, String(n)); }catch(e){ /* storage unavailable */ }
+  }
+
+  // ================= Font size control (A-/A+) =================
+
+  const FONT_SCALE_KEY = "hamsa_font_scale_v1";
+  const FONT_SCALE_MIN = 0.8, FONT_SCALE_MAX = 1.6, FONT_SCALE_STEP = 0.1;
+
+  function getSavedFontScale(){
+    try{
+      const v = parseFloat(localStorage.getItem(FONT_SCALE_KEY));
+      return (!isNaN(v) && v >= FONT_SCALE_MIN && v <= FONT_SCALE_MAX) ? v : 1;
+    }catch(e){ return 1; }
+  }
+  function applyFontScale(v){
+    document.documentElement.style.setProperty('--font-scale', v);
+    try{ localStorage.setItem(FONT_SCALE_KEY, String(v)); }catch(e){ /* storage unavailable */ }
+  }
+
+  let currentFontScale = getSavedFontScale();
+  applyFontScale(currentFontScale); // apply immediately - independent of data loading
+
+  els.fontDecreaseBtn.addEventListener('click', () => {
+    currentFontScale = Math.max(FONT_SCALE_MIN, +(currentFontScale - FONT_SCALE_STEP).toFixed(2));
+    applyFontScale(currentFontScale);
+  });
+  els.fontIncreaseBtn.addEventListener('click', () => {
+    currentFontScale = Math.min(FONT_SCALE_MAX, +(currentFontScale + FONT_SCALE_STEP).toFixed(2));
+    applyFontScale(currentFontScale);
+  });
+
+  // ================= Init =================
+
+  async function init(){
+    const initT0 = performance.now();
+
+    // 1) Live Google Sheet + IndexedDB cache read, run in parallel - the cache read
+    //    doesn't depend on the live fetch, so there's no reason to wait for one before
+    //    starting the other.
+    const [rawSecond, cached] = await Promise.all([
+      fetchSecondSource(SECOND_SOURCE_URL),
+      idbGetBacklog()
+    ]);
+    const k1 = extractK1(rawSecond);
+    if(k1 === null){
+      els.syncDot.classList.add('warn');
+      els.syncDot.title = 'Live source unavailable this session - using cached/GitHub backlog only';
+    }
+
+    // 2) Backlog: from IndexedDB if K1 matches what we cached, otherwise re-fetch from GitHub.
+    const { rows: backlogRows, fromCache } = await loadBacklog(k1, cached);
+    console.info('[HAMSA] k1 (live sheet [0][10]) =', k1,
+                 '| backlog source =', fromCache ? 'IndexedDB cache' : 'GitHub (freshly downloaded)',
+                 '| backlog rows =', backlogRows.length,
+                 '| live rows =', rawSecond ? rawSecond.length : 0);
+
+    // 3) Sync sanity check: K1 should equal the last row's Message No within the backlog we ended up with.
+    try{
+      if(k1 !== null && backlogRows.length){
+        const lastRow = backlogRows[backlogRows.length - 1];
+        const backlogLastMsgNo = parseInt(lastRow[5], 10);
+        if(!isNaN(backlogLastMsgNo) && backlogLastMsgNo !== k1){
+          els.syncDot.classList.add('warn');
+          alert('Sync check failed:\nGoogle Sheet [0][10] (K1) = ' + k1 +
+                '\nchatData0.json last Message No = ' + backlogLastMsgNo +
+                '\n\nThe two data sources may be out of sync. Showing merged data anyway.');
+        }
+      }
+    }catch(e){ console.warn('HAMSA: sync check could not be completed.', e); }
+
+    // 4) Merge backlog + live delta by Message No (live wins on duplicates).
+    const map = new Map();
+    backlogRows.forEach(row => { const n = normalizeRow(row, 'backlog'); if(n) map.set(n.messageNo, n); });
+    if(rawSecond){
+      rawSecond.forEach(row => { const n = normalizeRow(row, 'live'); if(n) map.set(n.messageNo, n); });
+    }
+
+    allMessages = Array.from(map.values()).sort((a,b) => a.messageNo - b.messageNo);
+
+    if(allMessages.length === 0){
+      els.messages.innerHTML = '<div class="error-box">No messages could be loaded. Please check your connection and try again.</div>';
+      els.subHeader.textContent = 'లోడ్ విఫలమైంది (Load failed)';
+      return;
+    }
+
+    byMessageNo = new Map(allMessages.map(m => [m.messageNo, m]));
+    childrenOf = new Map();
+    allMessages.forEach(m => {
+      if(m.refNo !== null){
+        if(!childrenOf.has(m.refNo)) childrenOf.set(m.refNo, []);
+        childrenOf.get(m.refNo).push(m);
+      }
+    });
+
+    buildSideMenu();
+    showRecentPopup();
+
+    const totalSeconds = ((performance.now() - initT0) / 1000).toFixed(2);
+    console.info('[HAMSA] total load time (fetch + merge + render):', totalSeconds + 's');
+  }
+
+  // ================= Side menu =================
+
+  function buildSideMenu(){
+    const topicCounts = new Map();
+    allMessages.forEach(m => m.topics.forEach(t => topicCounts.set(t, (topicCounts.get(t)||0) + 1)));
+    const topics = Array.from(topicCounts.keys()).sort(naturalTopicSort);
+
+    els.topicList.innerHTML = '';
+    topics.forEach(t => {
+      const li = document.createElement('li');
+      li.innerHTML = '<span>'+escapeHtml(t)+'</span><span class="cnt">'+topicCounts.get(t)+'</span>';
+      li.addEventListener('click', () => {
+        if(!sideMenuUnlocked) return;
+        closeSideMenu();
+        renderTopicView(t, { scrollToLast: true });
+        highlightActiveTopic(li);
+      });
+      els.topicList.appendChild(li);
+    });
+  }
+
+  function highlightActiveTopic(activeLi){
+    Array.from(els.topicList.children).forEach(li => li.classList.remove('active'));
+    activeLi.classList.add('active');
+  }
+
+  function unlockSideMenu(){
+    sideMenuUnlocked = true;
+    els.menuToggle.classList.remove('locked');
+    els.searchToggleBtn.classList.remove('locked');
+  }
+  function openSideMenu(){
+    if(!sideMenuUnlocked) return;
+    els.sideMenu.classList.add('open');
+    els.sideMenuOverlay.classList.add('open');
+  }
+  function closeSideMenu(){
+    els.sideMenu.classList.remove('open');
+    els.sideMenuOverlay.classList.remove('open');
+  }
+  els.menuToggle.addEventListener('click', () => {
+    closeSearch();
+    if(els.sideMenu.classList.contains('open')) closeSideMenu(); else openSideMenu();
+  });
+  els.sideMenuOverlay.addEventListener('click', closeSideMenu);
+
+  // ================= Search (Ctrl+F / search button) =================
+  // Native browser find only searches whatever topic happens to be rendered right now -
+  // this searches the entire in-memory archive instead, then jumps straight to the match.
+
+  // Highlights matches of `query` inside rendered message text by walking real text nodes
+  // and wrapping matches in <mark> elements - operates purely via DOM APIs (TreeWalker +
+  // createTextNode/replaceChild), never touches innerHTML as a string, so it can't corrupt
+  // the already-sanitized message markup or reintroduce any injection risk.
+  function highlightTextInNode(rootEl, query){
+    const qLower = query.toLowerCase();
+    const walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT, null);
+    const textNodes = [];
+    let node;
+    while((node = walker.nextNode())) textNodes.push(node);
+
+    textNodes.forEach(textNode => {
+      const text = textNode.nodeValue;
+      const lower = text.toLowerCase();
+      let idx = lower.indexOf(qLower);
+      if(idx === -1) return;
+
+      const frag = document.createDocumentFragment();
+      let cursor = 0;
+      while(idx !== -1){
+        if(idx > cursor) frag.appendChild(document.createTextNode(text.slice(cursor, idx)));
+        const mark = document.createElement('mark');
+        mark.textContent = text.slice(idx, idx + query.length);
+        frag.appendChild(mark);
+        cursor = idx + query.length;
+        idx = lower.indexOf(qLower, cursor);
+      }
+      if(cursor < text.length) frag.appendChild(document.createTextNode(text.slice(cursor)));
+      textNode.parentNode.replaceChild(frag, textNode);
+    });
+  }
+
+  function buildSnippet(text, query){
+    const idx = text.toLowerCase().indexOf(query.toLowerCase());
+    if(idx === -1){
+      return escapeHtml(text.slice(0, 120)) + (text.length > 120 ? '…' : '');
+    }
+    const contextBefore = 40, contextAfter = 70;
+    const start = Math.max(0, idx - contextBefore);
+    const end = Math.min(text.length, idx + query.length + contextAfter);
+    const before = (start > 0 ? '…' : '') + text.slice(start, idx);
+    const match = text.slice(idx, idx + query.length);
+    const after = text.slice(idx + query.length, end) + (end < text.length ? '…' : '');
+    return escapeHtml(before) + '<mark>' + escapeHtml(match) + '</mark>' + escapeHtml(after);
+  }
+
+  function performSearch(rawQuery){
+    const query = rawQuery.trim();
+    els.searchResultsList.innerHTML = '';
+    if(query.length < 2){
+      els.searchMeta.textContent = 'Type at least 2 characters to search.';
+      return;
+    }
+    const qLower = query.toLowerCase();
+    const matches = [];
+    for(let i = 0; i < allMessages.length; i++){
+      const m = allMessages[i];
+      if(m.message.toLowerCase().includes(qLower) || m.sender.toLowerCase().includes(qLower)){
+        matches.push(m);
+        if(matches.length >= 200) break; // cap - plenty for a search result list, keeps render fast
+      }
+    }
+    if(matches.length === 0){
+      els.searchMeta.textContent = 'No matches found.';
+      return;
+    }
+    els.searchMeta.textContent = matches.length + (matches.length >= 200 ? '+' : '') +
+      ' match' + (matches.length === 1 ? '' : 'es') + ' found' +
+      (matches.length >= 200 ? ' (showing first 200)' : '') + '.';
+
+    const frag = document.createDocumentFragment();
+    matches.forEach(m => {
+      const topicLabel = m.topics[0] || '';
+      const li = document.createElement('li');
+      li.innerHTML =
+        '<div><span class="sr-topic">' + escapeHtml(topicLabel) + '</span>' +
+        '<span class="sr-sender">' + escapeHtml(m.sender) + '</span>' +
+        '<span class="sr-date">' + escapeHtml(m.date) + '</span></div>' +
+        '<div class="sr-snippet">' + buildSnippet(m.message, query) + '</div>';
+      li.addEventListener('click', () => {
+        closeSearch();
+        closeSideMenu();
+        renderTopicView(topicLabel, { scrollToMessageNo: m.messageNo, highlightQuery: query });
+        const matchingLi = Array.from(els.topicList.children).find(x => x.textContent.startsWith(topicLabel));
+        if(matchingLi) highlightActiveTopic(matchingLi);
+      });
+      frag.appendChild(li);
+    });
+    els.searchResultsList.appendChild(frag);
+  }
+
+  function getSavedSearchQuery(){
+    try{ return localStorage.getItem(SEARCH_QUERY_KEY) || ''; }catch(e){ return ''; }
+  }
+  function saveSearchQuery(q){
+    try{
+      if(q) localStorage.setItem(SEARCH_QUERY_KEY, q);
+      else localStorage.removeItem(SEARCH_QUERY_KEY);
+    }catch(e){ /* storage unavailable */ }
+  }
+  function updateSearchClearBtn(){
+    els.searchClearBtn.style.display = els.searchInput.value ? 'flex' : 'none';
+  }
+
+  function openSearch(){
+    if(!sideMenuUnlocked) return;
+    closeSideMenu();
+    els.searchOverlay.classList.add('open');
+    const saved = getSavedSearchQuery();
+    els.searchInput.value = saved;
+    updateSearchClearBtn();
+    if(saved){
+      performSearch(saved); // last search is remembered - shows results immediately, no retyping
+    } else {
+      els.searchResultsList.innerHTML = '';
+      els.searchMeta.textContent = 'Type at least 2 characters to search.';
+    }
+    setTimeout(() => els.searchInput.focus(), 50);
+  }
+  function closeSearch(){
+    els.searchOverlay.classList.remove('open'); // closing does NOT clear the saved query - only the explicit clear button does
+  }
+
+  els.searchToggleBtn.addEventListener('click', openSearch);
+  els.searchCloseBtn.addEventListener('click', closeSearch);
+  els.searchOverlay.addEventListener('click', (e) => { if(e.target === els.searchOverlay) closeSearch(); });
+
+  els.searchClearBtn.addEventListener('click', () => {
+    els.searchInput.value = '';
+    saveSearchQuery('');
+    els.searchResultsList.innerHTML = '';
+    els.searchMeta.textContent = 'Type at least 2 characters to search.';
+    updateSearchClearBtn();
+    els.searchInput.focus();
+  });
+
+  let searchDebounceTimer = null;
+  els.searchInput.addEventListener('input', () => {
+    updateSearchClearBtn();
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+      const q = els.searchInput.value;
+      saveSearchQuery(q.trim()); // emptying the input (by any means) also clears the saved query
+      performSearch(q);
+    }, 150);
+  });
+
+  window.addEventListener('keydown', (e) => {
+    const isFindShortcut = (e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F');
+    if(isFindShortcut && sideMenuUnlocked){
+      e.preventDefault();
+      if(els.searchOverlay.classList.contains('open')){
+        els.searchInput.focus();
+      } else {
+        openSearch();
+      }
+      return;
+    }
+    if(e.key === 'Escape' && els.searchOverlay.classList.contains('open')){
+      closeSearch();
+    }
+  });
+
+  // ================= Recent popup (Message-No bookmark driven) =================
+
+  function showRecentPopup(){
+    const maxMsgNo = allMessages[allMessages.length - 1].messageNo; // sorted ascending
+
+    let bookmark = getBookmarkMsgNo();
+    if(bookmark === null){
+      // First-ever visit: no prior bookmark. Seed it using "max date, min Message No" -
+      // find the newest date present, look back DEFAULT_LOOKBACK_DAYS days, and take the
+      // smallest Message No in that window as the one-time threshold.
+      const maxDateObj = allMessages.reduce((mx, m) => m.dateObj > mx ? m.dateObj : mx, allMessages[0].dateObj);
+      const cutoffDate = new Date(maxDateObj);
+      cutoffDate.setDate(cutoffDate.getDate() - DEFAULT_LOOKBACK_DAYS);
+      const windowMsgs = allMessages.filter(m => m.dateObj >= cutoffDate);
+      bookmark = windowMsgs.length ? (Math.min.apply(null, windowMsgs.map(m => m.messageNo)) - 1) : maxMsgNo;
+    }
+
+    const recent = allMessages.filter(m => m.messageNo > bookmark);
+
+    els.topicSummaryList.innerHTML = '';
+
+    if(recent.length === 0){
+      els.popupTitle.textContent = 'కొత్త సందేశాలు లేవు';
+      els.popupSub.textContent = 'No new messages since your last visit.';
+      const li = document.createElement('li');
+      li.className = 'all-row';
+      li.innerHTML = '<span>కొనసాగించండి (Continue)</span>';
+      li.addEventListener('click', () => {
+        setBookmarkMsgNo(maxMsgNo);
+        closePopupAndUnlock();
+        renderRecentAllView([]);
+      });
+      els.topicSummaryList.appendChild(li);
+      els.popupOverlay.classList.add('open');
+      els.subHeader.textContent = 'HAMSA';
+      return;
+    }
+
+    els.popupTitle.textContent = 'కొత్త సందేశాలు';
+    els.popupSub.textContent = 'New messages since your last visit — pick an item to view them.';
+
+    const topicCounts = new Map();
+    recent.forEach(m => m.topics.forEach(t => topicCounts.set(t, (topicCounts.get(t)||0) + 1)));
+    const topics = Array.from(topicCounts.keys()).sort(naturalTopicSort);
+
+    const allLi = document.createElement('li');
+    allLi.className = 'all-row';
+    allLi.innerHTML = '<span>అన్ని సందేశాలు (All messages)</span><span class="cnt">'+recent.length+'</span>';
+    allLi.addEventListener('click', () => {
+      setBookmarkMsgNo(maxMsgNo);
+      closePopupAndUnlock();
+      renderRecentAllView(recent);
+    });
+    els.topicSummaryList.appendChild(allLi);
+
+    topics.forEach(t => {
+      const li = document.createElement('li');
+      li.innerHTML = '<span>'+escapeHtml(t)+'</span><span class="cnt">'+topicCounts.get(t)+'</span>';
+      li.addEventListener('click', () => {
+        setBookmarkMsgNo(maxMsgNo);
+        closePopupAndUnlock();
+        renderTopicView(t, { scrollToMsgNo: bookmark });
+      });
+      els.topicSummaryList.appendChild(li);
+    });
+
+    els.popupOverlay.classList.add('open');
+    els.subHeader.textContent = 'కొత్త సందేశాలు (' + recent.length + ')';
+  }
+
+  function closePopupAndUnlock(){
+    els.popupOverlay.classList.remove('open');
+    unlockSideMenu(); // "Only on clicking the list all messages / any item, clear the popup and allow access to side menu."
+  }
+
+  // ================= Rendering =================
+
+  function buildNode(msg, depth, newSinceMsgNo){
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-node depth-' + Math.min(depth, 4) + ((newSinceMsgNo !== null && msg.messageNo > newSinceMsgNo) ? ' new-msg' : '');
+    wrap.id = 'msg-' + msg.messageNo;
+
+    const senderClass = depth === 0 ? 'sender-root' : 'sender-reply';
+    const dateClass = depth === 0 ? 'date-root' : 'date-reply';
+
+    const header = document.createElement('div');
+    header.className = 'msg-header';
+    header.innerHTML =
+      '<span class="'+senderClass+'">'+escapeHtml(msg.sender)+'</span>' +
+      '<span class="'+dateClass+'">'+msg.date+' • '+msg.time+'</span>';
+    wrap.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+    body.innerHTML = sanitizeMessageHtml(msg.message);
+    wrap.appendChild(body);
+
+    const kids = (childrenOf.get(msg.messageNo) || []).slice().sort((a,b) => a.messageNo - b.messageNo);
+    if(kids.length){
+      const kidsWrap = document.createElement('div');
+      kidsWrap.className = 'msg-children';
+      kids.forEach(k => kidsWrap.appendChild(buildNode(k, depth + 1, newSinceMsgNo)));
+      wrap.appendChild(kidsWrap);
+    }
+    return wrap;
+  }
+
+  function renderTopicView(topicName, opts){
+    opts = opts || {};
+    els.subHeader.textContent = topicName;
+    els.messages.innerHTML = '';
+
+    // refNo always falls within the same topic, so a simple "no parent in this topic" test
+    // reliably finds the thread roots.
+    const roots = allMessages.filter(m => {
+      if(!m.topics.includes(topicName)) return false;
+      if(m.refNo === null) return true;
+      const parent = byMessageNo.get(m.refNo);
+      return !parent;
+    }).sort((a,b) => a.messageNo - b.messageNo);
+
+    if(roots.length === 0){
+      els.messages.innerHTML = '<div class="error-box">ఈ అంశంలో సందేశాలు కనబడలేదు. (No messages found for this topic.)</div>';
+      return;
+    }
+
+    const newSinceMsgNo = (typeof opts.scrollToMsgNo === 'number') ? opts.scrollToMsgNo : null;
+
+    const frag = document.createDocumentFragment();
+    let dividerInserted = (newSinceMsgNo === null);
+    roots.forEach(r => {
+      if(!dividerInserted && r.messageNo > newSinceMsgNo){
+        const div = document.createElement('div');
+        div.className = 'new-divider';
+        div.textContent = 'కొత్త సందేశాలు (New since last visit)';
+        div.id = 'scrollAnchor';
+        frag.appendChild(div);
+        dividerInserted = true;
+      }
+      frag.appendChild(buildNode(r, 0, newSinceMsgNo));
+    });
+    els.messages.appendChild(frag);
+
+    requestAnimationFrame(() => {
+      updateScrollToggle();
+      if(opts.scrollToMessageNo){
+        const anchorEl = document.getElementById('msg-' + opts.scrollToMessageNo);
+        if(anchorEl){
+          anchorEl.scrollIntoView({behavior:'smooth', block:'center'});
+          anchorEl.classList.add('flash-highlight');
+          setTimeout(() => anchorEl.classList.remove('flash-highlight'), 1700);
+          if(opts.highlightQuery){
+            const bodyEl = anchorEl.querySelector('.msg-body');
+            if(bodyEl) highlightTextInNode(bodyEl, opts.highlightQuery);
+          }
+          return;
+        }
+      }
+      if(newSinceMsgNo !== null){
+        const anchor = document.getElementById('scrollAnchor');
+        if(anchor){ anchor.scrollIntoView({behavior:'smooth', block:'start'}); return; }
+      }
+      if(opts.scrollToLast){
+        // "On click of a side menu item, show the messages and scroll down to the last 4-5 messages."
+        const startIdx = Math.max(0, roots.length - 5);
+        const anchorEl = document.getElementById('msg-' + roots[startIdx].messageNo);
+        if(anchorEl){ anchorEl.scrollIntoView({behavior:'smooth', block:'start'}); return; }
+      }
+      window.scrollTo({top:0, behavior:'instant'});
+    });
+  }
+
+  function renderRecentAllView(recentMessages){
+    els.subHeader.textContent = 'కొత్త సందేశాలు (Recent messages)';
+    els.messages.innerHTML = '';
+
+    if(recentMessages.length === 0){
+      els.messages.innerHTML = '<div class="error-box">కొత్త సందేశాలు లేవు. (No new messages.)</div>';
+      updateScrollToggle();
+      return;
+    }
+
+    const recentIds = new Set(recentMessages.map(m => m.messageNo));
+    const roots = recentMessages.filter(m => m.refNo === null || !byMessageNo.has(m.refNo) || !recentIds.has(m.refNo))
+                                 .sort((a,b) => a.messageNo - b.messageNo);
+
+    const frag = document.createDocumentFragment();
+    roots.forEach(r => frag.appendChild(buildNode(r, 0, null)));
+    els.messages.appendChild(frag);
+    window.scrollTo({top:0, behavior:'instant'});
+    requestAnimationFrame(updateScrollToggle);
+  }
+
+  // ================= PWA: service worker + install prompt =================
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js')
+        .catch(e => console.warn('HAMSA: service worker registration failed.', e));
+    });
+  }
+
+  let deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    els.installBtn.hidden = false; // Chrome/Edge/Android only - iOS Safari has no such event
+  });
+  els.installBtn.addEventListener('click', async () => {
+    if(!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    els.installBtn.hidden = true;
+  });
+  window.addEventListener('appinstalled', () => { els.installBtn.hidden = true; });
+
+  // ================= Scroll-to-top/bottom toggle button =================
+
+  function updateScrollToggle(){
+    const scrollable = document.body.scrollHeight > window.innerHeight + 40;
+    els.scrollToggleBtn.classList.toggle('hidden', !scrollable);
+    if(!scrollable) return;
+    const nearTop = window.scrollY < 80;
+    els.scrollToggleBtn.innerHTML = nearTop ? '&#9660;' : '&#9650;'; // down arrow near top, up arrow otherwise
+    els.scrollToggleBtn.setAttribute('aria-label', nearTop ? 'Scroll to bottom' : 'Scroll to top');
+  }
+
+  els.scrollToggleBtn.addEventListener('click', () => {
+    const nearTop = window.scrollY < 80;
+    window.scrollTo({ top: nearTop ? document.body.scrollHeight : 0, behavior: 'smooth' });
+  });
+
+  window.addEventListener('scroll', updateScrollToggle, { passive: true });
+  window.addEventListener('resize', updateScrollToggle);
+
+  // ================= Go =================
+  init();
+
+})();
+</script>
+</body>
+</html>
