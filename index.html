@@ -872,6 +872,51 @@
   // Native browser find only searches whatever topic happens to be rendered right now -
   // this searches the entire in-memory archive instead, then jumps straight to the match.
 
+  // ---- Grapheme-cluster-aware boundary helpers ----
+  // Telugu (and other Indic scripts) build one visual character from a base consonant plus
+  // combining vowel signs/virama - a "grapheme cluster". Plain string indexOf()/slice() work
+  // at the raw code-point level and can cut a cluster in half at a truncation or highlight
+  // boundary, splitting a base letter from its matra. These helpers snap any computed index
+  // outward to the nearest real cluster boundary before slicing, so highlighting/snippets
+  // never break a glyph mid-character. Uses Intl.Segmenter (current Unicode text-segmentation
+  // standard) where available, with a Telugu-aware regex fallback for older browsers.
+  const graphemeSegmenter = (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function')
+    ? new Intl.Segmenter('te', { granularity: 'grapheme' }) : null;
+
+  function getGraphemeBoundaries(text){
+    const boundaries = [0];
+    if(graphemeSegmenter){
+      for(const seg of graphemeSegmenter.segment(text)){
+        boundaries.push(seg.index + seg.segment.length);
+      }
+      return boundaries;
+    }
+    // Fallback: base character + any following Telugu combining marks/matras/virama-conjuncts.
+    const re = /[\s\S](?:[\u0C00-\u0C03\u0C3E-\u0C44\u0C46-\u0C48\u0C4A-\u0C4D\u0C55\u0C56\u0C62\u0C63\u200C\u200D]|\u0C4D[\u0C00-\u0C7F])*/g;
+    let m;
+    while((m = re.exec(text))){
+      boundaries.push(m.index + m[0].length);
+      if(m[0].length === 0) re.lastIndex++;
+    }
+    if(boundaries[boundaries.length - 1] !== text.length) boundaries.push(text.length);
+    return boundaries;
+  }
+
+  // direction 'start': largest boundary <= idx (snap backward). 'end': smallest boundary >= idx (snap forward).
+  function snapToGraphemeBoundary(boundaries, idx, direction){
+    if(direction === 'start'){
+      let result = 0;
+      for(let i = 0; i < boundaries.length; i++){
+        if(boundaries[i] <= idx) result = boundaries[i]; else break;
+      }
+      return result;
+    }
+    for(let i = 0; i < boundaries.length; i++){
+      if(boundaries[i] >= idx) return boundaries[i];
+    }
+    return boundaries[boundaries.length - 1];
+  }
+
   // Highlights matches of `query` inside rendered message text by walking real text nodes
   // and wrapping matches in <mark> elements - operates purely via DOM APIs (TreeWalker +
   // createTextNode/replaceChild), never touches innerHTML as a string, so it can't corrupt
@@ -889,14 +934,17 @@
       let idx = lower.indexOf(qLower);
       if(idx === -1) return;
 
+      const boundaries = getGraphemeBoundaries(text);
       const frag = document.createDocumentFragment();
       let cursor = 0;
       while(idx !== -1){
-        if(idx > cursor) frag.appendChild(document.createTextNode(text.slice(cursor, idx)));
+        const safeStart = snapToGraphemeBoundary(boundaries, idx, 'start');
+        const safeEnd = snapToGraphemeBoundary(boundaries, idx + query.length, 'end');
+        if(safeStart > cursor) frag.appendChild(document.createTextNode(text.slice(cursor, safeStart)));
         const mark = document.createElement('mark');
-        mark.textContent = text.slice(idx, idx + query.length);
+        mark.textContent = text.slice(safeStart, safeEnd);
         frag.appendChild(mark);
-        cursor = idx + query.length;
+        cursor = safeEnd;
         idx = lower.indexOf(qLower, cursor);
       }
       if(cursor < text.length) frag.appendChild(document.createTextNode(text.slice(cursor)));
@@ -907,14 +955,18 @@
   function buildSnippet(text, query){
     const idx = text.toLowerCase().indexOf(query.toLowerCase());
     if(idx === -1){
-      return escapeHtml(text.slice(0, 120)) + (text.length > 120 ? '…' : '');
+      const boundaries = getGraphemeBoundaries(text);
+      const safeCut = snapToGraphemeBoundary(boundaries, 120, 'end');
+      return escapeHtml(text.slice(0, safeCut)) + (safeCut < text.length ? '…' : '');
     }
-    const contextBefore = 40, contextAfter = 70;
-    const start = Math.max(0, idx - contextBefore);
-    const end = Math.min(text.length, idx + query.length + contextAfter);
-    const before = (start > 0 ? '…' : '') + text.slice(start, idx);
-    const match = text.slice(idx, idx + query.length);
-    const after = text.slice(idx + query.length, end) + (end < text.length ? '…' : '');
+    const boundaries = getGraphemeBoundaries(text);
+    const matchStart = snapToGraphemeBoundary(boundaries, idx, 'start');
+    const matchEnd = snapToGraphemeBoundary(boundaries, idx + query.length, 'end');
+    const start = snapToGraphemeBoundary(boundaries, Math.max(0, matchStart - 40), 'start');
+    const end = snapToGraphemeBoundary(boundaries, Math.min(text.length, matchEnd + 70), 'end');
+    const before = (start > 0 ? '…' : '') + text.slice(start, matchStart);
+    const match = text.slice(matchStart, matchEnd);
+    const after = text.slice(matchEnd, end) + (end < text.length ? '…' : '');
     return escapeHtml(before) + '<mark>' + escapeHtml(match) + '</mark>' + escapeHtml(after);
   }
 
