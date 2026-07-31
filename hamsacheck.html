@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://gvssmark.github.io/HAMSA/chatData0.json"></script>
+<meta name="viewport" content="width=device-width, maximum-scale=1, user-scalable=no, initial-scale=1.0">
+</head>
+<body>
+
+<h1>HAMSA DATA CHECK</h1>
+
+<p>GitHub Data Last Record: <span id='gitlength'></span></p>
+<p>Google Sheet Data First Record: <span id='sheetdatalength'></span></p>
+
+
+
+<script>
+ async function newdata () {
+      //loader.style.display = 'block';
+      
+        const response = await fetch('https://script.google.com/macros/s/AKfycbxDuDW1plTf8LusgXNHjA-5rflH33T07ahVKbAYmDTuza_A_qZ5Lfb4wFzSWIuktWVd0A/exec');
+         data = await response.json();
+         
+         document.getElementById('sheetdatalength').innerHTML=data[1]
+//console.log(data)
+}
+newdata ()
+//console.log(chatData0)
+document.getElementById('gitlength').innerHTML=chatData0[chatData0.length-1]
+</script>
+
+</body>
+</html>
+
