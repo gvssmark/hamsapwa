@@ -107,6 +107,7 @@
     box-shadow:0 2px 6px rgba(150,110,20,0.25);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
+  #continueReadingLink{ cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
 
   /* ---------- Side menu ---------- */
   #sideMenuOverlay{
@@ -368,6 +369,7 @@
   const CHATDATA_URL = "https://gvssmark.github.io/HAMSA/chatData0.json"; // global var set by this file: chatData0
   const SECOND_SOURCE_URL = "https://script.google.com/macros/s/AKfycbxDuDW1plTf8LusgXNHjA-5rflH33T07ahVKbAYmDTuza_A_qZ5Lfb4wFzSWIuktWVd0A/exec";
   const BOOKMARK_KEY = "hamsa_last_seen_msgno_v1";
+  const CONTINUE_TOPIC_KEY = "hamsa_continue_topic_v1";
   const SEARCH_QUERY_KEY = "hamsa_search_query_v1";
   const DEFAULT_LOOKBACK_DAYS = 7; // used only to seed the very first-ever visit (no bookmark yet)
 
@@ -722,6 +724,38 @@
   }
   function setBookmarkMsgNo(n){
     try{ localStorage.setItem(BOOKMARK_KEY, String(n)); }catch(e){ /* storage unavailable */ }
+  }
+
+  // ================= "Continue reading" bookmark (Option C) =================
+  // Deliberately independent of the new-messages bookmark above: this only remembers the
+  // last topic the user actually opened, and only updates on real navigation - never
+  // touched by anything related to detecting/counting new messages, so incoming messages
+  // can never silently change or reset it.
+
+  function getSavedContinueTopic(){
+    try{ return localStorage.getItem(CONTINUE_TOPIC_KEY) || null; }catch(e){ return null; }
+  }
+  function saveContinueTopic(topicName){
+    try{ localStorage.setItem(CONTINUE_TOPIC_KEY, topicName); }catch(e){ /* storage unavailable */ }
+  }
+
+  // Shows "📖 Continue: <topic>" in the subHeader if a saved topic exists and still has
+  // messages in the currently loaded data (handles a since-retired/purged topic gracefully
+  // by simply not showing anything, rather than a dead link).
+  function showContinueReadingIfAvailable(){
+    const saved = getSavedContinueTopic();
+    if(!saved) return false;
+    const stillExists = allMessages.some(m => m.topics.includes(saved));
+    if(!stillExists) return false;
+
+    els.subHeader.innerHTML = '<span id="continueReadingLink">&#128214; Continue: ' + escapeHtml(saved) + '</span>';
+    const link = document.getElementById('continueReadingLink');
+    link.addEventListener('click', () => {
+      renderTopicView(saved, { scrollToLast: true });
+      const matchingLi = Array.from(els.topicList.children).find(x => x.textContent.startsWith(saved));
+      if(matchingLi) highlightActiveTopic(matchingLi);
+    });
+    return true;
   }
 
   // ================= Font size control (A-/A+) =================
@@ -1196,6 +1230,7 @@
 
   function renderTopicView(topicName, opts){
     opts = opts || {};
+    saveContinueTopic(topicName); // remember as "last actually read" - independent of new-message state
     els.subHeader.textContent = topicName;
     els.messages.innerHTML = '';
 
@@ -1265,6 +1300,7 @@
 
     if(recentMessages.length === 0){
       els.messages.innerHTML = '<div class="error-box">కొత్త సందేశాలు లేవు. (No new messages.)</div>';
+      showContinueReadingIfAvailable();
       updateScrollToggle();
       return;
     }
@@ -1276,6 +1312,7 @@
     const frag = document.createDocumentFragment();
     roots.forEach(r => frag.appendChild(buildNode(r, 0, null)));
     els.messages.appendChild(frag);
+    showContinueReadingIfAvailable();
     window.scrollTo({top:0, behavior:'instant'});
     requestAnimationFrame(updateScrollToggle);
   }
